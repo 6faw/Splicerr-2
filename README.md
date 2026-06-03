@@ -1,15 +1,10 @@
-# <img src="./src-tauri/icons/128x128.png" width="64"/> Splicerr
+# <img src="./src-tauri/icons/128x128.png" width="64"/> Splicerr 2
 
-**Splicerr** is an alternative frontend for the popular [Splice](https://splice.com/features/sounds) sample library. It does not require any authentication and contains all of the most important features of the regular desktop app (including drag-and-drop).
+_This project is currently in Beta. The current build is subject to change._
 
-It's basically a full rewrite of [ascpixi's](https://github.com/ascpixi) [Splicedd ❤️](https://github.com/ascpixi/splicedd), just with a couple more features and built with [Svelte](https://svelte.dev/) and [Tauri 2.0](https://v2.tauri.app/).
+In light of the original **Splicerr** made by Robert K, this is a new lightweight & faster version of the original. By reducing load times, featuring QOL improvements such as token utility for paid sources, and performance.
 
-Please show your appreciation by starring ⭐ the [original project](https://github.com/ascpixi/splicedd), as it made this all possible.
-
-<p align="center">
-  <br>
-  <a href="https://github.com/robert-k/splicerr/releases/"><b>Click here to download the latest release!</b></a>
-</p>
+Additionally, it features a patch for the "Splice" sound library source.
 
 ## Demo
 
@@ -27,17 +22,22 @@ https://github.com/user-attachments/assets/34f1ba90-c881-4a04-a5df-c147bdb51c2c
 - Custom UI scale
 - Adjustable preview volume
 
-## 🔧 How to develop
+## How to develop
 
-1. Install the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) & [pnpm](https://pnpm.io/installation)
-2. Clone the project: `git clone https://github.com/robert-k/splicerr`
-3. Install dependencies: `pnpm i`
-4. Start the development server: `pnpm tauri dev`
+1. Install the [Tauri v2 prerequisites](https://v2.tauri.app/start/prerequisites/) and [pnpm](https://pnpm.io/installation).
+2. Clone the project:
 
-## 💡 Recommended IDE Setup
+   ```bash
+   git clone https://github.com/6faw/Splicerr-2.git
+   cd Splicerr-2
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+## Recommended IDE Setup
+
+[VS Code](https://code.visualstudio.com/) with:
+
+- [Svelte for VS Code](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode)
+- [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode)
+- [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
 
 ---
 
-[![forthebadge](https://forthebadge.com/images/badges/contains-17-coffee-cups.svg)](https://forthebadge.com) [![forthebadge](https://forthebadge.com/images/badges/made-with-out-pants.svg)](https://forthebadge.com) [![forthebadge](https://forthebadge.com/images/badges/works-on-my-machine.svg)](https://forthebadge.com)
