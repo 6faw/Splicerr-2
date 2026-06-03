@@ -5,6 +5,7 @@
     import pako from "pako"
     import { inview } from "svelte-inview"
     import { cn } from "$lib/utils"
+    import { debugLog } from "$lib/shared/logger"
 
     const key = `progress-gradient-${uid()}`
 
@@ -13,11 +14,13 @@
     let {
         src,
         progress = 0,
+        seed = "",
         class: className,
         onseek,
     }: {
         src: string
         progress?: number
+        seed?: string
         class?: string
         onseek: (progress: number) => void
     } = $props()
@@ -30,9 +33,45 @@
 
     let isInView = $state(true)
 
-    const loaded = $derived(loadedSrc == src)
+    const loaded = $derived(src ? loadedSrc == src : true)
+
+    // Simple hash-based PRNG for deterministic, unique waveforms per asset
+    function seededRandom(s: string) {
+        let h = 0;
+        for (let i = 0; i < s.length; i++) {
+            h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+        }
+        return () => {
+            h = (h * 1103515245 + 12345) & 0x7fffffff;
+            return h / 0x7fffffff;
+        };
+    }
 
     $effect(() => {
+        if (!src) {
+            const rng = seed ? seededRandom(seed) : Math.random;
+            const mockWaveform: number[] = [];
+            // Pick unique frequency/phase parameters per seed
+            const freq1 = 4 + rng() * 14;
+            const freq2 = 8 + rng() * 24;
+            const phase1 = rng() * Math.PI * 2;
+            const phase2 = rng() * Math.PI * 2;
+            const amp1 = 0.06 + rng() * 0.14;
+            const amp2 = 0.02 + rng() * 0.08;
+            for (let i = 0; i < 200; i++) {
+                const t = i / 200;
+                const envelope = Math.sin(t * Math.PI);
+                const val = 0.12
+                    + Math.sin(t * freq1 + phase1) * amp1
+                    + Math.sin(t * freq2 + phase2) * amp2
+                    + rng() * 0.04;
+                mockWaveform.push(Math.max(0.02, Math.min(0.9, val * (0.4 + envelope * 0.6))));
+            }
+            waveform = mockWaveform;
+            loadedSrc = "";
+            isLoading = false;
+            return;
+        }
         if (!isLoading && !loaded && !loading.fetchError) {
             fetchWaveform()
         }
@@ -64,13 +103,13 @@
                     loading.waveformsCount -= 1
                     isLoading = false
                 } else {
-                    console.info("🕜 Ignored stale waveform")
+                    debugLog("Ignored stale waveform")
                     loading.waveformsCount -= 1
                     isLoading = false
                 }
             })
             .catch((error: Error) => {
-                console.error("⚠️ Failed loading waveform", error)
+                console.error("Failed loading waveform", error)
                 loading.waveformsCount -= 1
             })
     }

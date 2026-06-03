@@ -4,9 +4,9 @@
     "version": "../package.json",
     "identifier": "de.kosro.splicerr",
     "build": {
-        "beforeDevCommand": "pnpm dev",
+        "beforeDevCommand": "npm run dev",
         "devUrl": "http://localhost:1337",
-        "beforeBuildCommand": "pnpm build",
+        "beforeBuildCommand": "npm run build",
         "frontendDist": "../build"
     },
     "app": {
@@ -19,7 +19,8 @@
         ],
         "security": {
             "csp": {
-                "connect-src": "'self' ipc: blob: http://ipc.localhost http://tauri.localhost https://*.splice.com/** https://spliceproduction.s3.*.amazonaws.com/** https://*.amazonaws.com/spliceblob.splice.com/** https://splice-res.cloudinary.com/**"
+                "connect-src": "'self' ipc: blob: http://ipc.localhost http://tauri.localhost https://*.splice.com/** https://spliceproduction.s3.*.amazonaws.com/** https://*.amazonaws.com/spliceblob.splice.com/** https://splice-res.cloudinary.com/** https://www.myinstants.com/** https://tuna-api.voicemod.net/** https://us-tuna-sounds-files.voicemod.net/** https://us-tuna-sounds-images.voicemod.net/** https://www.epidemicsound.com/** https://audiocdn.epidemicsound.com/** https://cdn.epidemicsound.com/** https://api.prosoundeffects.com/** https://www.prosoundeffects.com/** https://prosoundeffects.blob.core.windows.net/** https://www.soundsnap.com/** https://ts231.search-soundsnap.com/** https://soundsnap-prod.nyc3.digitaloceanspaces.com/** https://sounddogs.com/** https://*.loopmasters.com/** https://cloud.loopmasters.com/** https://demos.loopmasters.com/** https://*.loopcloud.net/** https://*.cloudfront.net/** https://d2cx9kaw24fnh5.cloudfront.net/** https://audiio.com/** https://*.audiio.com/** https://*.envato.com/** https://*.audiojungle.net/**",
+                "media-src": "'self' blob: https://www.myinstants.com/** https://*.splice.com/** https://spliceproduction.s3.*.amazonaws.com/** https://*.amazonaws.com/spliceblob.splice.com/** https://us-tuna-sounds-files.voicemod.net/** https://audiocdn.epidemicsound.com/** https://prosoundeffects.blob.core.windows.net/** https://www.soundsnap.com/** https://soundsnap-prod.nyc3.digitaloceanspaces.com/** https://sounddogs.com/** https://cloud.loopmasters.com/** https://demos.loopmasters.com/** https://*.loopcloud.net/** https://*.cloudfront.net/** https://d2cx9kaw24fnh5.cloudfront.net/**"
             }
         }
     },

@@ -17,6 +17,78 @@
                 },
                 {
                     "url": "https://*.amazonaws.com/spliceblob.splice.com/**"
+                },
+                {
+                    "url": "https://www.myinstants.com/**"
+                },
+                {
+                    "url": "https://tuna-api.voicemod.net/**"
+                },
+                {
+                    "url": "https://us-tuna-sounds-files.voicemod.net/**"
+                },
+                {
+                    "url": "https://us-tuna-sounds-images.voicemod.net/**"
+                },
+                {
+                    "url": "https://www.epidemicsound.com/**"
+                },
+                {
+                    "url": "https://audiocdn.epidemicsound.com/**"
+                },
+                {
+                    "url": "https://cdn.epidemicsound.com/**"
+                },
+                {
+                    "url": "https://api.prosoundeffects.com/**"
+                },
+                {
+                    "url": "https://www.prosoundeffects.com/**"
+                },
+                {
+                    "url": "https://prosoundeffects.blob.core.windows.net/**"
+                },
+                {
+                    "url": "https://www.soundsnap.com/**"
+                },
+                {
+                    "url": "https://ts231.search-soundsnap.com/**"
+                },
+                {
+                    "url": "https://soundsnap-prod.nyc3.digitaloceanspaces.com/**"
+                },
+                {
+                    "url": "https://sounddogs.com/**"
+                },
+                {
+                    "url": "https://*.loopmasters.com/**"
+                },
+                {
+                    "url": "https://cloud.loopmasters.com/**"
+                },
+                {
+                    "url": "https://demos.loopmasters.com/**"
+                },
+                {
+                    "url": "https://*.loopcloud.net/**"
+                },
+                {
+                    "url": "https://*.cloudfront.net/**"
+                },
+                {
+                    "url": "https://d2cx9kaw24fnh5.cloudfront.net/**"
+                },
+                {
+                    "url": "https://audiio.com/**"
+                },
+                {
+                    "url": "https://*.audiio.com/**"
+                },
+                {
+                    "url": "https://*.envato.com/**"
+                },
+                {
+                    "url": "https://*.audiojungle.net/**"
                 }
             ]
         },

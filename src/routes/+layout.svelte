@@ -1,7 +1,6 @@
 <script lang="ts">
     import "../app.css"
     import { ModeWatcher } from "mode-watcher"
-    import { getCurrentWebview } from "@tauri-apps/api/webview"
     import {
         config,
         isSamplesDirValid,
@@ -13,18 +12,26 @@
     let { children } = $props()
 
     const DEFAULT_SCALE = 0.8
+    let setWebviewZoom = $state<((scale: number) => void) | null>(null)
 
     $effect(() => {
-        getCurrentWebview().setZoom(config.ui_scale * DEFAULT_SCALE)
+        setWebviewZoom?.(config.ui_scale * DEFAULT_SCALE)
     })
 
-    onMount(() =>
+    onMount(() => {
+        import("@tauri-apps/api/webview").then(({ getCurrentWebview }) => {
+            const webview = getCurrentWebview()
+            setWebviewZoom = (scale: number) => {
+                void webview.setZoom(scale)
+            }
+        })
+
         loadConfig().then(() => {
             if (!isSamplesDirValid()) {
                 settingsDialog.open = true
             }
         })
-    )
+    })
 </script>
 
 <ModeWatcher />

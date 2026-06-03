@@ -1,4 +1,3 @@
-// ------------- Templates are copy-pasted from the browser devtools network tab -------------
 // Make sure the variables are complete and have appropriate default values
 
 interface QueryTemplate {
@@ -73,30 +72,18 @@ export const SoundsSearchAutocomplete = {
 
 // ---------------------------------------------------------------
 
-const GRAPHQL_URL = "https://surfaces-graphql.splice.com/graphql"
-
-import { fetch } from "@tauri-apps/plugin-http"
+import { invoke } from "@tauri-apps/api/core"
+import { debugLog } from "$lib/shared/logger"
 
 export async function querySplice(
     template: QueryTemplate,
     variables: typeof template.variables = {}
-) {
+): Promise<any> {
     const body = { ...template }
     Object.assign(body.variables, variables)
     const startTime = Date.now()
-    console.log("💌 Requesting", body)
-    let response = await fetch(GRAPHQL_URL, {
-        method: "POST",
-        body: JSON.stringify(body),
-        headers: {
-            "Content-Type": "application/json",
-        },
-    })
-    if (!response.ok) {
-        console.error(await response.text())
-        return null
-    }
-    const json = await response.json()
-    console.log("📬 Received", json, "after", Date.now() - startTime, "ms")
+    debugLog("Requesting Splice GraphQL", body)
+    const json = await invoke<any>("splice_graphql", { body })
+    debugLog("Received Splice GraphQL response", json, "after", Date.now() - startTime, "ms")
     return json
 }

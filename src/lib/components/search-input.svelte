@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { querySplice, SoundsSearchAutocomplete } from "$lib/splice/api"
     import Search from "lucide-svelte/icons/search"
     import { Card } from "$lib/components/ui/card"
     import { Button } from "$lib/components/ui/button"
@@ -40,6 +39,19 @@
     const submit = () => {
         lastSubmittedValue = value
         onsubmit()
+    }
+
+    const updateSuggestions = async () => {
+        const requestedValue = value
+        const { searchAutocomplete } = await import("$lib/splice/autocomplete")
+        const response = await searchAutocomplete(requestedValue)
+        if (requestedValue !== value) return
+
+        suggestions = (
+            response as SoundsSearchAutocompleteResponse
+        ).data.soundsSearchSuggestions.results
+        lastSuggestionValue = value.trim().toLowerCase()
+        inputRef.selectionStart = inputRef.selectionEnd = value.length
     }
 </script>
 
@@ -103,16 +115,7 @@
                 if (value !== lastSubmittedValue) {
                     debounce(submit)
                 }
-                querySplice(SoundsSearchAutocomplete, { term: value }).then(
-                    (response) => {
-                        suggestions = (
-                            response as SoundsSearchAutocompleteResponse
-                        ).data.soundsSearchSuggestions.results
-                        lastSuggestionValue = value.trim().toLowerCase()
-                        inputRef.selectionStart = inputRef.selectionEnd =
-                            value.length
-                    }
-                )
+                updateSuggestions()
             }}
             class="select-all placeholder:text-muted-foreground flex h-10 w-full rounded-md bg-transparent py-3 outline-none disabled:cursor-not-allowed disabled:opacity-50 text-sm"
         />

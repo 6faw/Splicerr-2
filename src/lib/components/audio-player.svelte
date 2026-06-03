@@ -14,7 +14,7 @@
     import { dataStore, fetchAssets } from "$lib/shared/store.svelte"
     import TagBadge from "$lib/components/tag-badge.svelte"
     import { assetIcons } from "$lib/shared/icons.svelte"
-    import CircleX from "lucide-svelte/icons/circle-x"
+    import AudioLines from "lucide-svelte/icons/audio-lines"
     import VolumeX from "lucide-svelte/icons/volume-x"
     import Volume1 from "lucide-svelte/icons/volume-1"
     import Volume2 from "lucide-svelte/icons/volume-2"
@@ -32,7 +32,11 @@
             MouseEventHandler<HTMLAnchorElement>
     } = $props()
 
-    const currentPack = $derived(globalAudio.currentAsset?.parents.items[0])
+    const currentPack = $derived(globalAudio.currentAsset ? {
+        name: globalAudio.currentAsset.packName,
+        files: [{ url: globalAudio.currentAsset.packCoverUrl || "" }],
+        sourceUrl: globalAudio.currentAsset.sourceUrl,
+    } : null)
     const currentName = $derived(globalAudio.currentAsset?.name.split("/").slice(-1)[0])
 </script>
 
@@ -47,8 +51,23 @@
             globalAudio.loading = true
             // TODO: Move into list component
         }}
+        onloadeddata={() => {
+            globalAudio.loading = false
+        }}
+        oncanplay={() => {
+            globalAudio.loading = false
+        }}
         oncanplaythrough={() => {
             globalAudio.loading = false
+        }}
+        onerror={() => {
+            globalAudio.loading = false
+            globalAudio.paused = true
+        }}
+        onloadedmetadata={() => {
+            if (globalAudio.currentAsset && globalAudio.duration > 0) {
+                globalAudio.currentAsset.duration = Math.round(globalAudio.duration * 1000);
+            }
         }}
     ></audio>
     <input
@@ -92,16 +111,16 @@
         </div>
         {#if globalAudio.currentAsset}
             <div class="flex gap-4 items-center shrink min-w-64">
-                <PackPreview side="top" pack={currentPack} />
+                <PackPreview side="top" pack={currentPack as any} />
                 <div>
-                    {#if globalAudio.currentAsset.asset_category_slug in assetIcons}
+                    {#if globalAudio.currentAsset.assetCategorySlug && globalAudio.currentAsset.assetCategorySlug in assetIcons}
                         {@const Icon =
                             assetIcons[
-                                globalAudio.currentAsset.asset_category_slug
+                                globalAudio.currentAsset.assetCategorySlug
                             ]}
                         <Icon class="group-hover:hidden" />
                     {:else}
-                        <CircleX class="group-hover:hidden" />
+                        <AudioLines class="group-hover:hidden" />
                     {/if}
                 </div>
                 <div class="min-w-32 overflow-clip">
@@ -111,7 +130,7 @@
                         <Tooltip.Provider>
                             <Tooltip.Root>
                                 <Tooltip.Trigger
-                                    class="overflow-clip text-nowrap cursor-grab"
+                                    class="block max-w-full overflow-hidden text-ellipsis text-nowrap cursor-grab"
                                 >
                                     {currentName}
                                 </Tooltip.Trigger>
@@ -192,7 +211,7 @@
         outline: none;
     }
 
-    .slider-nothumb-track {
+    .slider-nothumb::-webkit-slider-runnable-track {
         height: 100%;
         background: linear-gradient(
             to right,
@@ -203,35 +222,46 @@
         );
     }
 
-    .slider-nothumb-thumb {
+    .slider-nothumb::-webkit-slider-thumb {
         -webkit-appearance: none;
         appearance: none;
-        width: 1rem;
+        width: 0;
         height: 100%;
         opacity: 0;
     }
 
-    .slider-nothumb::-webkit-slider-runnable-track {
-        @apply slider-nothumb-track;
-    }
-
-    .slider-nothumb::-webkit-slider-thumb {
-        @apply slider-nothumb-thumb;
-    }
-
     .slider-nothumb:focus::-webkit-slider-thumb {
-        @apply slider-nothumb-thumb;
+        -webkit-appearance: none;
+        appearance: none;
+        width: 0;
+        height: 100%;
+        opacity: 0;
     }
 
     .slider-nothumb::-moz-range-track {
-        @apply slider-nothumb-track;
+        height: 100%;
+        background: linear-gradient(
+            to right,
+            theme("colors.muted.foreground") 0%,
+            theme("colors.muted.foreground") calc(var(--progress, 0%)),
+            theme("colors.muted.DEFAULT") calc(var(--progress, 0%)),
+            theme("colors.muted.DEFAULT") 100%
+        );
     }
 
     .slider-nothumb::-moz-range-thumb {
-        @apply slider-nothumb-thumb;
+        appearance: none;
+        width: 0;
+        height: 100%;
+        border: 0;
+        opacity: 0;
     }
 
     .slider-nothumb:focus::-moz-range-thumb {
-        @apply slider-nothumb-thumb;
+        appearance: none;
+        width: 0;
+        height: 100%;
+        border: 0;
+        opacity: 0;
     }
 </style>

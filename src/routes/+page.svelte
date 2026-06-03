@@ -31,6 +31,9 @@
     } from "$lib/shared/store.svelte"
     import SettingsDialog from "$lib/components/settings-dialog.svelte"
     import KeySelect from "$lib/components/key-select.svelte"
+    import { registry } from "$lib/shared/provider.svelte"
+    import { debugLog } from "$lib/shared/logger"
+    import * as Select from "$lib/components/ui/select/index"
 
     // TODO: Taxonomy comboboxes (maybe just pass all tags to each)
     // const instrumentTags = $derived(() =>
@@ -129,21 +132,29 @@
     //     )
 
     onMount(() => {
-        viewportRef.addEventListener("scroll", () => {
+        const handleScroll = () => {
             if (
                 !loading.assets &&
+                dataStore.has_more &&
                 viewportRef.scrollTop + viewportRef.clientHeight >=
                     viewportRef.scrollHeight - viewportRef.clientHeight
             ) {
                 queryStore.page += 1
-                console.log("📃 End of list reached, loading more assets")
+                debugLog("End of list reached, loading more assets")
                 fetchAssets()
             }
-        })
+        }
+
+        viewportRef.addEventListener("scroll", handleScroll)
 
         searchInputRef.focus()
 
-        fetchAssets()
+        const initialFetchFrame = requestAnimationFrame(fetchAssets)
+
+        return () => {
+            cancelAnimationFrame(initialFetchFrame)
+            viewportRef.removeEventListener("scroll", handleScroll)
+        }
     })
 </script>
 
@@ -151,6 +162,30 @@
     <div class="flex flex-col p-4 gap-4">
         <div class="flex gap-4 justify-between items-center">
             <SettingsDialog />
+            <Select.Root
+                type="single"
+                value={registry.activeProviderIdValue}
+                onValueChange={(v) => {
+                    registry.setActive(v)
+                    dataStore.tags = []
+                    queryStore.page = 1
+                    fetchAssets()
+                }}
+            >
+                <Select.Trigger class="w-[180px]">
+                    {registry.activeProviderName}
+                </Select.Trigger>
+                <Select.Content>
+                    <Select.Group>
+                        <Select.GroupHeading class="text-xs text-muted-foreground font-normal">Provider</Select.GroupHeading>
+                        {#each registry.getProvidersList() as provider}
+                            <Select.Item value={provider.id} label={provider.name}>
+                                {provider.name}
+                            </Select.Item>
+                        {/each}
+                    </Select.Group>
+                </Select.Content>
+            </Select.Root>
             <SearchInput
                 bind:value={queryStore.query}
                 onsubmit={fetchAssets}
@@ -246,7 +281,11 @@
 
         <div class="flex justify-between items-end gap-2">
             <div class="text-muted-foreground text-xs flex-grow">
-                {dataStore.total_records.toLocaleString()} results
+                {#if dataStore.total_records_known}
+                    {dataStore.total_records.toLocaleString()} results
+                {:else}
+                    {dataStore.sampleAssets.length.toLocaleString()} loaded
+                {/if}
             </div>
             <Button
                 variant="outline"
@@ -370,6 +409,7 @@
                         <Ghost size="48" />
                         <p class="font-bold text-xl">Something went wrong :/</p>
                         <p class="text-sm">Couldn't load any samples</p>
+                        <p class="text-xs text-red-500 max-w-md text-center break-all select-all font-mono">{(loading.fetchError as Error)?.message || (loading.fetchError as Error)?.toString() || JSON.stringify(loading.fetchError)}</p>
                         <Button onclick={fetchAssets}>Retry</Button>
                     {:else if loading.beforeFirstLoad}
                         <Smile size="48" />
@@ -378,7 +418,11 @@
                     {:else}
                         <Search size="48" />
                         <p class="font-bold text-xl">No results</p>
-                        <p class="text-sm">Try different keywords</p>
+                        {#if registry.activeProviderIdValue === "epidemicsound"}
+                            <p class="text-sm text-center max-w-md mt-1 px-4">To load Epidemic Sound music, please paste a direct track or SFX link from the epidemicsound.com website.</p>
+                        {:else}
+                            <p class="text-sm">Try different keywords</p>
+                        {/if}
                     {/if}
                 </div>
             {/each}

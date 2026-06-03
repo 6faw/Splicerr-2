@@ -9,6 +9,7 @@ import {
     stat,
 } from "@tauri-apps/plugin-fs"
 import { resetMode, setMode } from "mode-watcher"
+import { debugLog } from "$lib/shared/logger"
 
 const CONFIG_FILE_NAME = "config.json"
 
@@ -20,6 +21,8 @@ const DEFAULT_CONFIG = {
     ui_scale: 1,
     cut_mp3_delay: true,
     repeat_audio: true,
+    voicemod_session_cookie: "",
+    envato_personal_token: "",
 }
 
 let samplesDirValid = $state(false)
@@ -43,10 +46,10 @@ export async function validateSamplesDir() {
 
     samplesDirValid = await validate()
 
-    console.log(
+    debugLog(
         samplesDirValid
-            ? "✅ Samples Directory valid"
-            : "❌ Samples Directory invalid"
+            ? "Samples directory is valid"
+            : "Samples directory is invalid"
     )
 
     return samplesDirValid
@@ -56,13 +59,13 @@ export async function loadConfig() {
     if (
         !(await exists(CONFIG_FILE_NAME, { baseDir: BaseDirectory.AppConfig }))
     ) {
-        console.log("📂 Config not found, keeping default")
+        debugLog("Config not found, keeping default")
     } else {
         const fileContent = await readTextFile("config.json", {
             baseDir: BaseDirectory.AppConfig,
         })
         Object.assign(config, JSON.parse(fileContent))
-        console.log("📂 Config loaded")
+        debugLog("Config loaded")
     }
 
     await validateSamplesDir()
@@ -83,7 +86,7 @@ export async function saveConfig() {
     await writeTextFile(CONFIG_FILE_NAME, JSON.stringify(config), {
         baseDir: BaseDirectory.AppConfig,
     })
-    console.log("💾 Config saved")
+    debugLog("Config saved")
 }
 
 export function updateTheme() {

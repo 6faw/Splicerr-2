@@ -31,7 +31,7 @@
         variant="ghost"
         size="sm"
         class={cn(
-            "gap-0 p-1",
+            "gap-1.5 p-1",
             active ? "text-primary" : "text-muted-foreground"
         )}
         onclick={() => onsort(value)}

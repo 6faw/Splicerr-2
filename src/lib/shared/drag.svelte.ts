@@ -1,9 +1,10 @@
 import { startDrag } from "@crabnebula/tauri-plugin-drag"
 import { join, appCacheDir } from "@tauri-apps/api/path"
 import { exists, create, mkdir, readFile } from "@tauri-apps/plugin-fs"
-import { saveSample, savePackImage, absolutePackImagePath } from "./files.svelte"
+import { saveSample, savePackImage } from "./files.svelte"
 import { loading } from "./loading.svelte"
-import type { SampleAsset, PackAsset } from "$lib/splice/types"
+import type { SoundAsset } from "./provider.svelte"
+import { debugLog } from "./logger"
 
 async function createDragIcon(
     packImagePath: string,
@@ -93,30 +94,27 @@ async function resizeImageToCorner(
     })
 }
 
-export async function handleSampleDrag(event: DragEvent, sampleAsset: SampleAsset) {
+export async function handleSampleDrag(event: DragEvent, sampleAsset: SoundAsset) {
     event.preventDefault()
-    console.log("🫳 Dragging", sampleAsset.name)
+    debugLog("Dragging sample", sampleAsset.name)
 
     try {
         loading.setCursor(true)
         const path = await saveSample(sampleAsset)
 
-        // Save pack image to samples directory and use it as drag icon
-        const pack = sampleAsset.parents.items[0] as PackAsset
         let iconPath: string
-
         const packImagePath = await savePackImage(sampleAsset)
 
         // Check if the image exists and use it, otherwise fallback to invisible icon
         if (packImagePath && await exists(packImagePath)) {
-            iconPath = await createDragIcon(packImagePath, pack.uuid)
+            iconPath = await createDragIcon(packImagePath, sampleAsset.uuid)
         } else {
             iconPath = await createInvisibleIcon()
         }
 
         startDrag({ item: [path], icon: iconPath })
     } catch (e) {
-        console.error("⚠️ Error dragging", e)
+        console.error("Error dragging sample", e)
     } finally {
         loading.setCursor(false)
     }

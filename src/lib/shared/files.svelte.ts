@@ -1,17 +1,29 @@
-import type { SampleAsset } from "$lib/splice/types"
+import type { SoundAsset } from "./provider.svelte"
 import { join, sep } from "@tauri-apps/api/path"
 import { exists, create, mkdir } from "@tauri-apps/plugin-fs"
 import { getDescrambledSampleURL } from "./store.svelte"
 import { config, isSamplesDirValid } from "$lib/shared/config.svelte"
-import { encode } from "node-wav"
-import { Buffer } from "buffer"
-
-globalThis.Buffer = Buffer // node-wav needs Buffer which is not defined when using Vite
+import { debugLog, debugWarn } from "$lib/shared/logger"
 
 const sanitizePath = (path: string) => path.replace(/[^a-zA-Z0-9#_\-\.\/]/g, "_")
 
-const sampleAssetPath = (sampleAsset: SampleAsset) =>
-    sanitizePath(`${sampleAsset.parents.items[0].name}/${sampleAsset.name}`)
+const sampleAssetPath = (sampleAsset: SoundAsset) => {
+    let name = sampleAsset.name
+    const previewProviders = ["epidemicsound", "loopcloud", "audiio", "audiojungle"]
+    if (previewProviders.includes(sampleAsset.providerId)) {
+        const match = name.match(/^(.*)(\.(?:wav|mp3|ogg|aif|aiff|flac))$/i)
+        if (match) {
+            name = `${match[1]} (Preview)${match[2]}`
+        } else {
+            name = `${name} (Preview)`
+        }
+    }
+    const hasExt = /\.(wav|mp3|ogg|aif|aiff|flac)$/i.test(name)
+    if (!hasExt) {
+        name += ".wav"
+    }
+    return sanitizePath(`${sampleAsset.packName}/${name}`)
+}
 
 async function ensureFileDirectoryExists(filePath: string) {
     const separator = sep()
@@ -26,27 +38,27 @@ async function ensureFileDirectoryExists(filePath: string) {
     }
 }
 
-export async function absoluteSamplePath(sampleAsset: SampleAsset) {
+export async function absoluteSamplePath(sampleAsset: SoundAsset) {
     if (!config.samples_dir) {
-        throw new Error("❌ Samples Directory not set")
+        throw new Error("Samples directory is not set")
     }
 
     if (!isSamplesDirValid()) {
-        throw new Error("❌ Samples Directory invalid")
+        throw new Error("Samples directory is invalid")
     }
 
     return await join(config.samples_dir, sampleAssetPath(sampleAsset))
 }
 
-export async function saveSample(sampleAsset: SampleAsset) {
+export async function saveSample(sampleAsset: SoundAsset) {
     const absolutePath = await absoluteSamplePath(sampleAsset)
 
     if (!absolutePath) {
-        throw new Error("❌ Invalid path")
+        throw new Error("Invalid sample path")
     }
 
     if (await exists(absolutePath)) {
-        console.log("🗃️ Sample already exists at", absolutePath)
+        debugLog("Sample already exists at", absolutePath)
         return absolutePath
     }
 
@@ -61,6 +73,12 @@ export async function saveSample(sampleAsset: SampleAsset) {
     const samples = await new AudioContext().decodeAudioData(buffer)
     const channels: Float32Array[] = []
 
+    // If the asset does not have a duration yet, resolve it from the decoded buffer
+    const durationMs = sampleAsset.duration > 0 ? sampleAsset.duration : samples.duration * 1000
+    if (sampleAsset.duration <= 0) {
+        sampleAsset.duration = Math.round(durationMs)
+    }
+
     for (let i = 0; i < samples.numberOfChannels; i++) {
         const channel = samples.getChannelData(i)
         
@@ -68,7 +86,7 @@ export async function saveSample(sampleAsset: SampleAsset) {
         const trimSamples = config.cut_mp3_delay ? Math.floor(samples.sampleRate * 0.012) : 0
         
         const start = trimSamples
-        const end = (sampleAsset.duration / 1000) * samples.sampleRate + start
+        const end = (durationMs / 1000) * samples.sampleRate + start
         
         // Make sure we don't try to slice beyond the available data
         const safeEnd = Math.min(end, channel.length)
@@ -76,12 +94,18 @@ export async function saveSample(sampleAsset: SampleAsset) {
         channels.push(channel.subarray(start, safeEnd))
     }
 
+    const [{ encode }, { Buffer }] = await Promise.all([
+        import("node-wav"),
+        import("buffer"),
+    ])
+    ;(globalThis as any).Buffer ??= Buffer
+
     const wavData = encode(channels as any, {
         bitDepth: 16,
         sampleRate: samples.sampleRate,
     })
 
-    console.log("🏆 Sample converted! Saving at", absolutePath)
+    debugLog("Sample converted, saving at", absolutePath)
 
     await ensureFileDirectoryExists(absolutePath)
 
@@ -89,37 +113,36 @@ export async function saveSample(sampleAsset: SampleAsset) {
     await file.write(new Uint8Array(wavData))
     await file.close()
 
-    console.log("🎉 Success!")
+    debugLog("Sample saved")
 
     return absolutePath
 }
 
-export async function absolutePackImagePath(sampleAsset: SampleAsset) {
+export async function absolutePackImagePath(sampleAsset: SoundAsset) {
     if (!config.samples_dir) {
-        throw new Error("❌ Samples Directory not set")
+        throw new Error("Samples directory is not set")
     }
 
     if (!isSamplesDirValid()) {
-        throw new Error("❌ Samples Directory invalid")
+        throw new Error("Samples directory is invalid")
     }
 
-    const pack = sampleAsset.parents.items[0]
-    const packDir = sanitizePath(pack.name)
+    const packDir = sanitizePath(sampleAsset.packName)
     return await join(config.samples_dir, packDir, "cover.jpg")
 }
 
-export async function savePackImage(sampleAsset: SampleAsset) {
-    const pack = sampleAsset.parents.items[0]
-    const packImageUrl = pack?.files[0].url
+export async function savePackImage(sampleAsset: SoundAsset) {
+    const packImageUrl = sampleAsset.packCoverUrl
+    if (!packImageUrl) return null
 
     const absolutePath = await absolutePackImagePath(sampleAsset)
 
     if (!absolutePath) {
-        throw new Error("❌ Invalid path")
+        throw new Error("Invalid pack image path")
     }
 
     if (await exists(absolutePath)) {
-        console.log("🗃️ Image already exists at", absolutePath)
+        debugLog("Pack image already exists at", absolutePath)
         return absolutePath
     }
 
@@ -128,7 +151,7 @@ export async function savePackImage(sampleAsset: SampleAsset) {
         if (!response.ok) throw new Error("Failed to fetch image")
         const buffer = await response.arrayBuffer()
 
-        console.log("🖼️ Saving pack image at", absolutePath)
+        debugLog("Saving pack image at", absolutePath)
 
         await ensureFileDirectoryExists(absolutePath)
 
@@ -136,16 +159,15 @@ export async function savePackImage(sampleAsset: SampleAsset) {
         await file.write(new Uint8Array(buffer))
         await file.close()
 
-        console.log("🎉 Pack image saved!")
+        debugLog("Pack image saved")
 
         return absolutePath
     } catch (e: any) {
-        console.log(e.message)
+        debugLog(e.message)
         if (e instanceof TypeError && (e.message.includes("Failed to fetch") || e.message.includes("Load failed"))) {
-            console.warn("⚠️ CORS error or network issue when fetching pack image", e)
+            debugWarn("CORS error or network issue when fetching pack image", e)
             return null
         }
         throw e
     }
 }
-

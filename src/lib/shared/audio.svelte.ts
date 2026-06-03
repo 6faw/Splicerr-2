@@ -1,4 +1,4 @@
-import type { PackAsset, SampleAsset } from "$lib/splice/types"
+import type { SoundAsset } from "./provider.svelte"
 import { loading } from "$lib/shared/loading.svelte"
 import { config } from "$lib/shared/config.svelte"
 import {
@@ -6,12 +6,13 @@ import {
     freeDescrambledSample,
     getDescrambledSampleURL,
 } from "$lib/shared/store.svelte"
+import { debugLog } from "$lib/shared/logger"
 
 let prevVolume = 0.8
 
 export const globalAudio = $state({
     ref: null! as HTMLAudioElement,
-    currentAsset: null as SampleAsset | null, // TODO: selected asset & audio player asset need to be thought through again
+    currentAsset: null as SoundAsset | null,
     paused: true,
     currentTime: 0,
     duration: 0,
@@ -31,7 +32,7 @@ export const globalAudio = $state({
             this.volume = prevVolume
         }
     },
-    async selectSampleAsset(sampleAsset: SampleAsset, play: boolean = true) {
+    async selectSampleAsset(sampleAsset: SoundAsset, play: boolean = true) {
         if (this.currentAsset?.uuid != sampleAsset.uuid) {
             this.paused = true
             this.currentTime = 0
@@ -47,16 +48,11 @@ export const globalAudio = $state({
             }
 
             this.currentAsset = sampleAsset
-            // this.ref.src = await getDescrambledSampleURL(sampleAsset)
         }
-        // if (play) {
-        //     this.playSampleAsset(sampleAsset)
-        // }
-        // TODO: this is kinda borked
     },
-    async playSampleAsset(sampleAsset: SampleAsset, from: number = 0) {
+    async playSampleAsset(sampleAsset: SoundAsset, from: number = 0) {
         if (loading.samples.has(sampleAsset.uuid)) {
-            console.info("🐢 Already loading sample")
+            debugLog("Sample is already loading")
             return
         }
         this.ref.src = ""
@@ -73,12 +69,18 @@ export const globalAudio = $state({
         }
 
         this.currentAsset = sampleAsset
-        this.ref.src = await getDescrambledSampleURL(sampleAsset)
-        if (this.currentAsset.uuid != sampleAsset.uuid) {
-            return
+        try {
+            this.ref.src = await getDescrambledSampleURL(sampleAsset)
+            if (this.currentAsset.uuid != sampleAsset.uuid) {
+                return
+            }
+            this.ref.currentTime = from
+            this.ref.loop = sampleAsset.assetCategorySlug == "loop" && config.repeat_audio
+            await this.ref.play()
+        } catch (error) {
+            console.error("Failed to play sample", error)
+            this.loading = false
+            this.paused = true
         }
-        this.ref.currentTime = from
-        this.ref.loop = sampleAsset.asset_category_slug == "loop" && config.repeat_audio
-        this.ref.play()
     },
 })

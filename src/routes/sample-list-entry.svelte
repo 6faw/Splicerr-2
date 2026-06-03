@@ -3,8 +3,8 @@
     import PackPreview from "$lib/components/pack-preview.svelte"
     import TagBadge from "$lib/components/tag-badge.svelte"
     import Waveform from "$lib/components/waveform.svelte"
-    import type { SampleAsset } from "$lib/splice/types"
-    import CircleX from "lucide-svelte/icons/circle-x"
+    import type { SoundAsset } from "$lib/shared/provider.svelte"
+    import AudioLines from "lucide-svelte/icons/audio-lines"
     import Pause from "lucide-svelte/icons/pause"
     import Play from "lucide-svelte/icons/play"
     import Button from "$lib/components/ui/button/button.svelte"
@@ -14,7 +14,6 @@
     import { cn, formatKey } from "$lib/utils"
     import { loading } from "$lib/shared/loading.svelte"
     import { assetIcons } from "$lib/shared/icons.svelte"
-    import {handleSampleDrag} from "$lib/shared/drag.svelte"
 
     let {
         class: className,
@@ -25,7 +24,7 @@
         class?: string
         selected: boolean
         playing: boolean
-        sampleAsset: SampleAsset
+        sampleAsset: SoundAsset
     } = $props()
 
     let playButtonRef = $state<HTMLButtonElement>(null!)
@@ -36,13 +35,56 @@
         }
     })
 
-    const pack = $derived(sampleAsset.parents.items[0])
-    const name = $derived(sampleAsset.name.split("/").slice(-1))
+    const pack = $derived({
+        name: sampleAsset.packName,
+        files: [{ url: sampleAsset.packCoverUrl || "" }],
+        sourceUrl: sampleAsset.sourceUrl,
+    })
+    const name = $derived(sampleAsset.name.split("/").slice(-1)[0])
 
     const millisToMinutesAndSeconds = (millis: number) => {
         var minutes = Math.floor(millis / 60000)
         var seconds = Math.floor((millis % 60000) / 1000)
         return minutes + ":" + (seconds < 10 ? "0" : "") + seconds
+    }
+
+    let probing = $state(false)
+
+    const handleMouseEnter = () => {
+        if (sampleAsset.duration <= 0 && sampleAsset.previewUrl && !probing) {
+            probing = true
+            const audio = new Audio()
+            audio.preload = "metadata"
+            
+            const cleanup = () => {
+                audio.src = ""
+                probing = false
+            }
+
+            const timeout = setTimeout(cleanup, 4000)
+
+            audio.addEventListener("loadedmetadata", () => {
+                clearTimeout(timeout)
+                const ms = Math.round(audio.duration * 1000)
+                if (isFinite(ms) && ms > 0) {
+                    sampleAsset.duration = ms
+                }
+                cleanup()
+            })
+
+            audio.addEventListener("error", () => {
+                clearTimeout(timeout)
+                cleanup()
+            })
+
+            audio.src = sampleAsset.previewUrl
+        }
+    }
+
+    const handleDragStart = async (event: DragEvent) => {
+        event.preventDefault()
+        const { handleSampleDrag } = await import("$lib/shared/drag.svelte")
+        await handleSampleDrag(event, sampleAsset)
     }
 </script>
 
@@ -56,9 +98,10 @@
     draggable="true"
     tabindex="-1"
     onmousedown={() => globalAudio.selectSampleAsset(sampleAsset, false)}
-    ondragstart={(event) => handleSampleDrag(event, sampleAsset)}
+    ondragstart={handleDragStart}
+    onmouseenter={handleMouseEnter}
 >
-    <PackPreview {pack} />
+    <PackPreview pack={pack as any} />
     <Button
         variant="ghost"
         bind:ref={playButtonRef}
@@ -75,11 +118,11 @@
             <Pause />
         {:else}
             <Play class="group-hover:block hidden" />
-            {#if sampleAsset.asset_category_slug in assetIcons}
-                {@const Icon = assetIcons[sampleAsset.asset_category_slug]}
+            {#if sampleAsset.assetCategorySlug && sampleAsset.assetCategorySlug in assetIcons}
+                {@const Icon = assetIcons[sampleAsset.assetCategorySlug]}
                 <Icon class="group-hover:hidden" />
             {:else}
-                <CircleX class="group-hover:hidden" />
+                <AudioLines class="group-hover:hidden" />
             {/if}
         {/if}
     </Button>
@@ -93,7 +136,7 @@
             <Tooltip.Provider>
                 <Tooltip.Root>
                     <Tooltip.Trigger
-                        class="overflow-clip text-nowrap cursor-grab"
+                        class="block max-w-full overflow-hidden text-ellipsis text-nowrap cursor-grab"
                     >
                         {name}
                     </Tooltip.Trigger>
@@ -116,7 +159,6 @@
                         onclick={() => {
                             if (!active) {
                                 dataStore.tags.push(tag.uuid)
-                                // updateTagSummary()
                                 fetchAssets()
                             }
                         }}
@@ -126,7 +168,8 @@
         </div>
     </div>
     <Waveform
-        src={sampleAsset.files[1].url}
+        src={sampleAsset.waveformUrl || ""}
+        seed={sampleAsset.uuid}
         progress={selected ? globalAudio.progress() : 0}
         onseek={(progress) => {
             const startTime = progress * (sampleAsset.duration / 1000)
@@ -135,11 +178,11 @@
         class="min-w-32 w-[150px] h-12 flex-grow md:block hidden"
     />
     <div class="text-muted-foreground flex-shrink-0 w-14 flex-grow">
-        {millisToMinutesAndSeconds(sampleAsset.duration)}
+        {sampleAsset.duration > 0 ? millisToMinutesAndSeconds(sampleAsset.duration) : "--"}
     </div>
     <div class="text-muted-foreground flex-shrink-0 w-14 flex-grow">
         {(sampleAsset.key &&
-            formatKey(sampleAsset.key, sampleAsset.chord_type)) ??
+            formatKey(sampleAsset.key, sampleAsset.chordType)) ??
             "--"}
     </div>
     <div class="text-muted-foreground flex-shrink-0 w-14 flex-grow">

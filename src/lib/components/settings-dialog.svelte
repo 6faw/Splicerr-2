@@ -3,10 +3,10 @@
     import Settings from "lucide-svelte/icons/settings"
     import { buttonVariants } from "$lib/components/ui/button/index.js"
     import { cn } from "$lib/utils"
-    import ExternalLink from "$lib/components/external-link.svelte"
     import Input from "$lib/components/ui/input/input.svelte"
     import Button from "$lib/components/ui/button/button.svelte"
     import FolderOpen from "lucide-svelte/icons/folder-open"
+    import Check from "lucide-svelte/icons/check"
     import TriangleAlert from "lucide-svelte/icons/triangle-alert"
     import Undo2 from "lucide-svelte/icons/undo-2"
     import Label from "$lib/components/ui/label/label.svelte"
@@ -162,43 +162,50 @@
                     </Label>
                 </div>
             </div>
-        </div>
-        <Dialog.Footer>
-            <div
-                class="text-muted-foreground inline-flex items-center text-nowrap"
-            >
-                Made with&nbsp;
-                <ExternalLink to="https://svelte.dev" class="shrink-0"
-                    ><img
-                        class="size-6 align-middle"
-                        src="/svelte.svg"
-                        alt="Svelte"
-                    /></ExternalLink
-                >
-                &nbsp;+&nbsp;
-                <ExternalLink to="https://tauri.app" class="shrink-0"
-                    ><img
-                        class="size-6 align-middle"
-                        src="/tauri.svg"
-                        alt="Tauri"
-                    /></ExternalLink
-                >
-                &nbsp;&&nbsp;
-                <ExternalLink
-                    to="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-                    class="text-2xl align-middle">❤️</ExternalLink
-                >
-                &nbsp;by&nbsp;
-                <ExternalLink
-                    to="https://github.com/Robert-K"
-                    class="text-primary">Kosro,</ExternalLink
-                >
-                &nbsp;inspired by&nbsp;
-                <ExternalLink
-                    to="https://github.com/ascpixi"
-                    class="text-primary">ascpixi</ExternalLink
-                >
+            <div class="flex flex-col gap-2">
+                <Label for="voicemodSessionCookie">Voicemod Auth Header</Label>
+                <p class="text-muted-foreground text-sm">
+                    Optional Cookie or Authorization value for logged-in Tuna results.
+                </p>
+                <div class="flex gap-2">
+                    <Input
+                        id="voicemodSessionCookie"
+                        type="password"
+                        placeholder="Bearer ey... or name=value; another=value"
+                        bind:value={config.voicemod_session_cookie}
+                    />
+                    <Button
+                        class="flex-shrink-0 text-accent-foreground"
+                        size="icon"
+                        variant="outline"
+                        onclick={saveConfig}
+                    >
+                        <Check />
+                    </Button>
+                </div>
             </div>
-        </Dialog.Footer>
+            <div class="flex flex-col gap-2">
+                <Label for="envatoPersonalToken">Envato Personal Token</Label>
+                <p class="text-muted-foreground text-sm">
+                    Optional Envato Personal Token for AudioJungle search results.
+                </p>
+                <div class="flex gap-2">
+                    <Input
+                        id="envatoPersonalToken"
+                        type="password"
+                        placeholder="Your Envato Personal Token"
+                        bind:value={config.envato_personal_token}
+                    />
+                    <Button
+                        class="flex-shrink-0 text-accent-foreground"
+                        size="icon"
+                        variant="outline"
+                        onclick={saveConfig}
+                    >
+                        <Check />
+                    </Button>
+                </div>
+            </div>
+        </div>
     </Dialog.Content>
 </Dialog.Root>
